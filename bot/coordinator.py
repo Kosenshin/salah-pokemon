@@ -3,6 +3,7 @@ import pyautogui
 from typing import Dict, Callable, Optional
 from bot.calibrator import ScreenCalibrator
 from bot.actions import ActionHandler
+from bot.process_manager import ProcessManager
 from config.settings import BOT_SETTINGS, CYCLE_SETTINGS
 from utils.logger import setup_logger
 
@@ -12,6 +13,7 @@ class BotCoordinator:
     
     def __init__(self):
         self.logger = setup_logger()
+        self.process_manager = ProcessManager()
         self.calibrator = ScreenCalibrator()
         self.action_handler = ActionHandler()
         self.is_running = False
@@ -22,14 +24,26 @@ class BotCoordinator:
         self.logger.info("Initializing Bot Coordinator...")
         
         try:
-            # Step 1: Calibrate screen and locate game window
+            # Step 1: Check PokéMMO is running and focus window
+            self.logger.info("Step 1: Checking PokéMMO process and window...")
+            if not self.process_manager.check_pokemmo_running():
+                raise RuntimeError("PokéMMO is not running or not accessible")
+            
+            # Step 2: Calibrate screen and locate game window
+            self.logger.info("Step 2: Calibrating screen...")
             if not await self.calibrator.calibrate():
                 raise RuntimeError("Screen calibration failed")
             
-            # Step 2: Initialize action handler with calibrated settings
-            self.action_handler.set_window_region(self.calibrator.get_window_region())
+            # Step 3: Initialize action handler with window region
+            self.logger.info("Step 3: Setting up action handler...")
+            window_region = self.process_manager.get_window_region()
+            if window_region:
+                self.action_handler.set_window_region(window_region)
+            else:
+                self.logger.warning("⚠️ Could not get window region, actions may not be targeted correctly")
             
-            # Step 3: Start main action cycle
+            # Step 4: Start main action cycle
+            self.logger.info("Step 4: Starting main action cycle...")
             self.is_running = True
             await self._run_main_cycle()
             
