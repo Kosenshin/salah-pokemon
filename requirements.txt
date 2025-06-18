@@ -1,0 +1,7 @@
+pyautogui==0.9.54
+opencv-python==4.10.0.84
+pillow==10.4.0
+pynput==1.7.7
+numpy==1.26.4
+asyncio-throttle==1.0.2
+aiofiles==24.1.0
